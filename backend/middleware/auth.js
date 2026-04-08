@@ -11,11 +11,15 @@ const protect = async (req, res, next) => {
       
       // Check Admin collection first
       let user = await User.findById(decoded.id).select('-password');
+      if (user) {
+        user.role = 'admin'; // Force role for existing admins
+      }
       
       // If not Admin, check Student collection
       if (!user) {
         const Student = require('../models/Student');
         user = await Student.findById(decoded.id).select('-password');
+        if (user) user.role = 'student';
       }
 
       if (!user) {

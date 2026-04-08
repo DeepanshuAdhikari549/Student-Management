@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { toast } from 'react-hot-toast';
-import { Plus, CheckCircle, Circle, Trash2, X, Calendar, User, FileText, Send, ClipboardCheck } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Trash2, X, Calendar, User, FileText, Send, ClipboardCheck, Clock, CheckCircle2 } from 'lucide-react';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'done'
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [submitModal, setSubmitModal] = useState(false);
   const [submittingTask, setSubmittingTask] = useState(null);
@@ -55,7 +57,7 @@ const Tasks = () => {
     try {
       const { data } = await API.patch(`/tasks/${id}`, { completed: !status });
       setTasks(tasks.map(t => t._id === id ? data : t));
-      toast.success(data.completed ? 'Task Finished' : 'Task Re-opened');
+      toast.success(data.completed ? 'Task Completed!' : 'Task Re-opened');
     } catch { toast.error('Error'); }
   };
 
@@ -72,71 +74,72 @@ const Tasks = () => {
     setForm({ ...form, students: next });
   };
 
-  const activeTasks = tasks.filter(t => !t.completed);
-  const finishedTasks = tasks.filter(t => t.completed);
+  const filteredTasks = tasks.filter(t => activeTab === 'done' ? t.completed : !t.completed);
+
+  const TabButton = ({ id, label, icon: Icon, count }) => (
+    <button 
+      onClick={() => setActiveTab(id)}
+      className={`btn ${activeTab === id ? 'btn-accent' : ''}`}
+      style={{
+        background: activeTab === id ? '#2563eb' : 'white',
+        color: activeTab === id ? 'white' : '#64748b',
+        border: activeTab === id ? 'none' : '1px solid #e2e8f0',
+        padding: '0.75rem 2rem',
+        borderRadius: '100px',
+        fontWeight: 700
+      }}
+    >
+      <Icon size={18} /> {label} ({count})
+    </button>
+  );
 
   return (
     <div style={{paddingBottom: '5rem'}}>
       <div className="page-header flex gap-4" style={{justifyContent: 'space-between', alignItems: 'center'}}>
         <div>
-          <h1 className="page-title">{userInfo.role === 'admin' ? 'Management Center' : 'My Learning'}</h1>
-          <p className="page-desc">Track and submit all educational work here.</p>
+          <h1 className="page-title">{userInfo.role === 'admin' ? 'Assignment Hub' : 'My Tasks'}</h1>
+          <p className="page-desc">The central place for all schoolwork.</p>
         </div>
         {userInfo.role === 'admin' && (
           <button onClick={() => setModalOpen(true)} className="btn btn-accent">
-            <Plus size={20} /> Assign Task
+            <Plus size={20} /> Create Assignment
           </button>
         )}
       </div>
 
+      <div className="flex gap-4 mb-10" style={{justifyContent: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '2.5rem'}}>
+        <TabButton 
+          id="active" 
+          label="Active Assignments" 
+          icon={Clock} 
+          count={tasks.filter(t => !t.completed).length} 
+        />
+        <TabButton 
+          id="done" 
+          label="Completed Work" 
+          icon={CheckCircle2} 
+          count={tasks.filter(t => t.completed).length} 
+        />
+      </div>
+
       {loading ? <h3>Loading...</h3> : (
-        <div className="grid" style={{gap: '3rem'}}>
-          
-          {/* Section 1: Active Tasks */}
-          <div>
-            <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-              <FileText size={24} color="#2563eb" /> Active Assignments
-            </h2>
-            <div className="grid">
-              {activeTasks.length > 0 ? activeTasks.map(t => (
-                <TaskCard 
-                  key={t._id} 
-                  t={t} 
-                  userInfo={userInfo} 
-                  onToggle={toggleComplete} 
-                  onRemove={remove} 
-                  onSubmit={() => { setSubmittingTask(t); setSubmitModal(true); }}
-                />
-              )) : (
-                <div className="card text-center" style={{padding: '2rem', color: '#94a3b8', background: 'transparent', borderStyle: 'dashed'}}>
-                  No active tasks found.
-                </div>
-              )}
+        <div className="grid">
+          {filteredTasks.length > 0 ? filteredTasks.map(t => (
+            <TaskCard 
+              key={t._id} 
+              t={t} 
+              userInfo={userInfo} 
+              onToggle={toggleComplete} 
+              onRemove={remove} 
+              onSubmit={() => { setSubmittingTask(t); setSubmitModal(true); }} 
+            />
+          )) : (
+            <div className="card text-center" style={{padding: '5rem', border: '3px dashed #f1f5f9', background: 'transparent'}}>
+              <h2 style={{color: '#cbd5e1', fontWeight: 700}}>
+                No {activeTab === 'done' ? 'Completed' : 'Active'} Tasks Found
+              </h2>
             </div>
-          </div>
-
-          {/* Section 2: Completed Tasks */}
-          <div>
-            <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#10b981'}}>
-              <ClipboardCheck size={24} /> Finished Records (Done)
-            </h2>
-            <div className="grid">
-              {finishedTasks.length > 0 ? finishedTasks.map(t => (
-                <TaskCard 
-                  key={t._id} 
-                  t={t} 
-                  userInfo={userInfo} 
-                  onToggle={toggleComplete} 
-                  onRemove={remove} 
-                />
-              )) : (
-                <div className="card text-center" style={{padding: '2rem', color: '#94a3b8', background: 'transparent', borderStyle: 'dashed'}}>
-                   Complete your first task to see it here!
-                </div>
-              )}
-            </div>
-          </div>
-
+          )}
         </div>
       )}
 
@@ -185,35 +188,38 @@ const Tasks = () => {
 };
 
 const TaskCard = ({ t, userInfo, onToggle, onRemove, onSubmit }) => (
-  <div className="card" style={{opacity: t.completed ? 0.7 : 1, transition: 'all 0.3s'}}>
-    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+  <div className="card" style={{
+    borderLeft: t.completed ? '8px solid #10b981' : (t.status === 'Submitted' ? '8px solid #2563eb' : '8px solid #f59e0b'),
+    opacity: t.completed ? 0.9 : 1
+  }}>
+    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
       <div style={{display: 'flex', gap: '1.5rem', alignItems: 'center'}}>
         {userInfo.role === 'admin' ? (
           <button onClick={() => onToggle(t._id, t.completed)} style={{background: 'none', border: 'none', cursor: 'pointer', color: t.completed ? '#10b981' : '#cbd5e1'}}>
-            {t.completed ? <CheckCircle size={32} /> : <Circle size={32} />}
+            {t.completed ? <CheckCircle size={36} /> : <Circle size={36} />}
           </button>
         ) : (
           <div style={{color: t.completed ? '#10b981' : t.status === 'Submitted' ? '#2563eb' : '#cbd5e1'}}>
-            {t.completed ? <CheckCircle size={32} /> : <FileText size={32} />}
+            {t.completed ? <CheckCircle size={36} /> : <FileText size={36} />}
           </div>
         )}
         <div>
-          <h3 style={{fontSize: '1.25rem', fontWeight: 700}}>{t.title}</h3>
+          <h3 style={{fontSize: '1.25rem', fontWeight: 800, textDecoration: t.completed ? 'line-through' : 'none'}}>{t.title}</h3>
           <div style={{display: 'flex', wrap: 'wrap', gap: '1rem', color: '#64748b', fontSize: '0.9rem'}}>
-            {userInfo.role === 'admin' && <span className="flex gap-1 items-center"><User size={14}/> {t.student?.name}</span>}
+            {userInfo.role === 'admin' && <span className="flex gap-1 items-center font-bold"><User size={14}/> {t.student?.name}</span>}
             <span className={`font-bold ${t.completed ? 'text-emerald-600' : 'text-amber-500'}`}>Status: {t.status}</span>
           </div>
         </div>
       </div>
       {userInfo.role === 'admin' && (
-        <button onClick={() => onRemove(t._id)} className="btn btn-red" style={{background: '#fee2e2', padding: '0.75rem'}}><Trash2 size={18} /></button>
+        <button onClick={() => onRemove(t._id)} className="btn btn-red" style={{background: '#fee2e2', padding: '0.75rem', borderRadius: '12px'}}><Trash2 size={18} /></button>
       )}
     </div>
-
+    
     {t.submission && (
-      <div style={{marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
-        <p style={{fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase'}}>Submission:</p>
-        <p>{t.submission}</p>
+      <div style={{marginTop: '1.25rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
+        <p style={{fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', marginBottom: '0.5rem'}}>STUDENT RESPONSE:</p>
+        <p style={{fontSize: '0.95rem'}}>{t.submission}</p>
       </div>
     )}
 
