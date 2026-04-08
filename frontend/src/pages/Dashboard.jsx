@@ -6,10 +6,15 @@ const Dashboard = () => {
   const [stats, setStats] = useState({ students: 0, tasks: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
+  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [sRes, tRes] = await Promise.all([API.get('/students'), API.get('/tasks')]);
+        const [sRes, tRes] = await Promise.all([
+          userInfo.role === 'admin' ? API.get('/students') : Promise.resolve({ data: [] }),
+          API.get('/tasks')
+        ]);
         const tasks = tRes.data;
         setStats({
           students: sRes.data.length,
@@ -26,20 +31,22 @@ const Dashboard = () => {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">SchoolHub Dashboard</h1>
-        <p className="page-desc">The simplest view of your school operations.</p>
+        <h1 className="page-title">{userInfo.role === 'admin' ? 'SchoolHub Dashboard' : `Hello, ${userInfo.name}`}</h1>
+        <p className="page-desc">{userInfo.role === 'admin' ? 'The simplest view of your school operations.' : 'Track your personal task progress.'}</p>
       </div>
 
       <div className="grid grid-cols-3 mb-10">
-        <div className="card text-center">
-          <div style={{color: '#2563eb', marginBottom: '1rem'}}><Users size={40} className="mx-auto" /></div>
-          <h2 style={{fontSize: '3rem', fontWeight: 800}}>{stats.students}</h2>
-          <p style={{color: '#64748b', fontWeight: 600}}>Students Enrolled</p>
-        </div>
+        {userInfo.role === 'admin' && (
+          <div className="card text-center">
+            <div style={{color: '#2563eb', marginBottom: '1rem'}}><Users size={40} className="mx-auto" /></div>
+            <h2 style={{fontSize: '3rem', fontWeight: 800}}>{stats.students}</h2>
+            <p style={{color: '#64748b', fontWeight: 600}}>Students Enrolled</p>
+          </div>
+        )}
         <div className="card text-center">
           <div style={{color: '#8b5cf6', marginBottom: '1rem'}}><ClipboardList size={40} className="mx-auto" /></div>
           <h2 style={{fontSize: '3rem', fontWeight: 800}}>{stats.tasks}</h2>
-          <p style={{color: '#64748b', fontWeight: 600}}>Total Assignments</p>
+          <p style={{color: '#64748b', fontWeight: 600}}>{userInfo.role === 'admin' ? 'Total Assignments' : 'My Total Tasks'}</p>
         </div>
         <div className="card text-center">
           <div style={{color: '#f59e0b', marginBottom: '1rem'}}><Clock size={40} className="mx-auto" /></div>

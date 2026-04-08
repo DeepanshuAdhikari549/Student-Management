@@ -27,22 +27,31 @@ function App() {
     const active = (p) => loc.pathname === p ? 'active' : '';
 
     return (
-      <nav className="nav">
-        <div className="container">
-          <div className="nav-inner">
-            <div className="brand">
-              <GraduationCap size={32} />
-              <span>SchoolHub</span>
+      <nav className="nav" style={{boxShadow: '0 1px 3px rgba(0,0,0,0.02)', position: 'sticky', top: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)'}}>
+        <div className="container" style={{maxWidth: '1400px'}}>
+          <div className="nav-inner" style={{height: '80px'}}>
+            <div className="brand" style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+              <div style={{background: '#2563eb', color: 'white', padding: '0.5rem', borderRadius: '10px'}}>
+                <GraduationCap size={28} />
+              </div>
+              <span style={{fontSize: '1.5rem', fontWeight: 900, tracking: '-0.02em', color: '#1e293b'}}>SchoolHub</span>
             </div>
-            <div className="menu">
-              <Link to="/" className={`menu-link ${active('/')}`}>Overview</Link>
-              <Link to="/students" className={`menu-link ${active('/students')}`}>Students</Link>
-              <Link to="/tasks" className={`menu-link ${active('/tasks')}`}>Assignments</Link>
+            <div className="menu" style={{display: 'flex', gap: '2rem'}}>
+              <Link to="/" className={`menu-link ${active('/')}`} style={{fontSize: '1rem', fontWeight: 600}}>Overview</Link>
+              {userInfo.role === 'admin' && <Link to="/students" className={`menu-link ${active('/students')}`} style={{fontSize: '1rem', fontWeight: 600}}>Students</Link>}
+              <Link to="/tasks" className={`menu-link ${active('/tasks')}`} style={{fontSize: '1rem', fontWeight: 600}}>
+                {userInfo.role === 'admin' ? 'Assignments' : 'My Tasks'}
+              </Link>
             </div>
-            <button onClick={handleLogout} className="btn-red btn" style={{padding: '0.5rem 1rem'}}>
-              <LogOut size={18} />
-              Logout
-            </button>
+            <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
+              <div style={{textAlign: 'right', display: 'none', md: 'block'}}>
+                <p style={{fontSize: '0.85rem', fontWeight: 700, color: '#1e293b'}}>{userInfo.name}</p>
+                <p style={{fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em'}}>{userInfo.role}</p>
+              </div>
+              <button onClick={handleLogout} className="btn-red btn" style={{padding: '0.6rem 1.2rem', borderRadius: '12px', fontSize: '0.9rem'}}>
+                <LogOut size={18} /> Exit
+              </button>
+            </div>
           </div>
         </div>
       </nav>
