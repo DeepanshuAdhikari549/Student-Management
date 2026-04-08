@@ -28,7 +28,7 @@ body {
 .container {
   max-width: var(--container);
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 6rem;
 }
 
 /* Nav - Simple & Clean */
