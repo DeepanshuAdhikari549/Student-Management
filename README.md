@@ -6,9 +6,7 @@ Live Link:   https://student-management-jade-seven.vercel.app/
 ## Tech Stack
 - **Frontend**: React + Vite
 - **Backend**: Node.js + Express
-- **Database**: MongoDB
-- **Icons**: Lucide React
-- **Notifications**: React Hot Toast
+- **Database**: MongoDb 
 
 ## Login -  admin
 ## password - admin123
