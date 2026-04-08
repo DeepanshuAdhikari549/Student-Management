@@ -1,8 +1,8 @@
 # SchoolHub Management System
 
 A simple, fast, and modern full-stack application to manage students and tasks.
-Live Link:   
-student-management-bhqaioyak-deepanshu-projects.vercel.app
+## 
+Live Link:   https://student-management-jade-seven.vercel.app/
 ## Tech Stack
 - **Frontend**: React + Vite
 - **Backend**: Node.js + Express
