@@ -15,8 +15,8 @@ connectDB().then(() => {
 
 // Middleware
 app.use(cors({
-  origin: '*', // For now, keep it open to allow Vercel. In production, specify origins.
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());

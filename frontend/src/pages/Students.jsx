@@ -24,6 +24,20 @@ const Students = () => {
     }
   };
 
+  if (loading) return (
+    <div className="page-header" style={{ textAlign: 'center', padding: '10rem 0' }}>
+      <div className="badge badge-blue" style={{ marginBottom: '1rem' }}>Syncing Registry...</div>
+      <p style={{ color: 'var(--text-light)', fontSize: '0.875rem' }}>If this takes too long, your backend might be offline.</p>
+      <button 
+        onClick={() => { localStorage.removeItem('userInfo'); window.location.reload(); }} 
+        className="btn btn-ghost" 
+        style={{ marginTop: '2rem' }}
+      >
+        Force Logout
+      </button>
+    </div>
+  );
+
   const handleOpen = (s = null) => {
     if (s) {
       setCurrent(s);
@@ -95,11 +109,7 @@ const Students = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', gridColumn: '1/-1' }}>
-            <div className="badge badge-blue">Loading registry...</div>
-          </div>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem' }}>
             <p style={{ color: 'var(--text-light)' }}>No students found matching your criteria.</p>
           </div>

@@ -148,8 +148,15 @@ const Tasks = () => {
 
       <div className="grid">
         {loading ? (
-            <div style={{ textAlign: 'center', padding: '4rem' }}>
-                <div className="badge badge-blue">Syncing Tasks...</div>
+            <div style={{ textAlign: 'center', padding: '6rem 1rem' }}>
+                <div className="badge badge-blue" style={{ marginBottom: '1rem' }}>Syncing Tasks...</div>
+                <p style={{ color: 'var(--text-light)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Taking too long? Check your connection.</p>
+                <button 
+                  onClick={() => { localStorage.removeItem('userInfo'); window.location.reload(); }} 
+                  className="btn btn-ghost" 
+                >
+                  Force Logout
+                </button>
             </div>
         ) : filteredTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: '1rem' }}>
@@ -279,8 +286,9 @@ const TaskCard = ({ t, userInfo, onToggle, onRemove, onSubmit }) => {
                             <User size={12} /> {t.student?.name}
                         </div>
                     )}
-                    <div className={`badge ${isDone ? 'badge-green' : (isSubmitted ? 'badge-blue' : 'badge-red')}`} style={{ fontSize: '0.65rem' }}>
-                        {t.status.toUpperCase()}
+                    <div className={`badge ${isDone ? 'badge-green' : (isSubmitted ? 'badge-blue' : 'badge-red')}`} style={{ fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }}></div>
+                        {isDone ? 'DONE' : t.status.toUpperCase()}
                     </div>
                     {t.dueDate && (
                         <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>

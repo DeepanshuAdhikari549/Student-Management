@@ -314,4 +314,17 @@ tr:last-child td {
 
 .badge-blue { background: var(--accent-soft); color: var(--accent); }
 .badge-green { background: #ecfdf5; color: var(--success); }
-.badge-red { background: #fef2f2; color: var(--danger); }
+/* Utility Classes */
+.hidden { display: none !important; }
+@media (min-width: 768px) {
+  .md-flex { display: inline-flex !important; }
+}
+
+.user-badge {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .user-badge { display: block; }
+}
+

@@ -63,11 +63,11 @@ function App() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ textAlign: 'right', display: 'none', lg: 'block' }} className="user-info-desktop">
+                <div style={{ textAlign: 'right' }} className="user-badge">
                   <p style={{ fontSize: '0.875rem', fontWeight: 700 }}>{userInfo.name}</p>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-light)', textTransform: 'uppercase' }}>{userInfo.role}</p>
                 </div>
-                <button onClick={handleLogout} className="btn-red btn" style={{ padding: '0.5rem 1rem', display: 'none', md: 'inline-flex' }}>
+                <button onClick={handleLogout} className="btn-red btn md-flex hidden" style={{ padding: '0.5rem 1rem' }}>
                   <LogOut size={18} /> Exit
                 </button>
                 <button className="mobile-toggle" onClick={toggleMobileMenu}>

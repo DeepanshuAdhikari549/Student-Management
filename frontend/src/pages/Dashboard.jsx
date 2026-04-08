@@ -33,7 +33,15 @@ const Dashboard = () => {
 
   if (loading) return (
     <div className="page-header" style={{ textAlign: 'center', padding: '10rem 0' }}>
-      <div className="badge badge-blue">Syncing Database...</div>
+      <div className="badge badge-blue" style={{ marginBottom: '1rem' }}>Syncing Database...</div>
+      <p style={{ color: 'var(--text-light)', fontSize: '0.875rem' }}>If this takes too long, your backend might be offline.</p>
+      <button 
+        onClick={() => { localStorage.removeItem('userInfo'); window.location.reload(); }} 
+        className="btn btn-ghost" 
+        style={{ marginTop: '2rem' }}
+      >
+        Force Logout
+      </button>
     </div>
   );
 

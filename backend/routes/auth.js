@@ -30,10 +30,11 @@ router.post('/login', async (req, res) => {
         token: jwt.sign({ id: user._id, role: user.role || role }, process.env.JWT_SECRET, { expiresIn: '30d' })
       });
     } else {
-      res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401).json({ message: 'Invalid username or password' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login Error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
 
@@ -68,7 +69,8 @@ router.post('/register', async (req, res) => {
       token: jwt.sign({ id: student._id, role: 'student' }, process.env.JWT_SECRET, { expiresIn: '30d' })
     });
   } catch (error) {
-    res.status(500).json({ message: 'Registration failed' });
+    console.error('Registration Error:', error);
+    res.status(500).json({ message: 'Registration failed: ' + error.message });
   }
 });
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
 const { protect } = require('../middleware/auth');
+const mongoose = require('mongoose');
 
 // @desc Get tasks (Admin shows all, Student shows only theirs)
 // @route GET /api/tasks
@@ -11,6 +12,7 @@ router.get('/', protect, async (req, res) => {
     const tasks = await Task.find(query).populate('student', 'name class rollNumber').sort({ createdAt: -1 });
     res.json(tasks);
   } catch (error) {
+    console.error('Fetch Tasks Error:', error);
     res.status(500).json({ message: 'Error fetching tasks' });
   }
 });
@@ -19,15 +21,29 @@ router.get('/', protect, async (req, res) => {
 // @route PATCH /api/tasks/:id/submit
 router.patch('/:id/submit', protect, async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: 'Task not found' });
-    
-    task.submission = req.body.submission;
-    task.status = 'Submitted';
-    await task.save();
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Task ID' });
+    }
+
+    const task = await Task.findOneAndUpdate(
+      { _id: id },
+      { 
+        submission: req.body.submission, 
+        status: 'Submitted' 
+      },
+      { new: true, runValidators: true }
+    ).populate('student', 'name class rollNumber');
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    console.log(`Task ${id} submitted successfully`);
     res.json(task);
   } catch (error) {
-    res.status(500).json({ message: 'Error submitting task' });
+    console.error('Submission Error:', error);
+    res.status(500).json({ message: 'Error submitting task: ' + error.message });
   }
 });
 
@@ -37,10 +53,9 @@ router.post('/', protect, async (req, res) => {
   const { title, description, student, dueDate, students } = req.body;
 
   try {
-    // Check if we are sending an array of students or a single one
     const studentIds = students || [student];
     
-    if (!studentIds || studentIds.length === 0) {
+    if (!studentIds || studentIds.length === 0 || !studentIds[0]) {
       return res.status(400).json({ message: 'No students selected' });
     }
 
@@ -50,12 +65,12 @@ router.post('/', protect, async (req, res) => {
 
     const createdTasks = await Promise.all(taskPromises);
     
-    // Return the first one populated for UI feedback, or just a success message
     const populated = await Task.find({ _id: { $in: createdTasks.map(t => t._id) } })
       .populate('student', 'name class rollNumber');
       
     res.status(201).json(populated);
   } catch (error) {
+    console.error('Create Task Error:', error);
     res.status(500).json({ message: 'Error creating tasks' });
   }
 });
@@ -64,18 +79,29 @@ router.post('/', protect, async (req, res) => {
 // @route PATCH /api/tasks/:id
 router.patch('/:id', protect, async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id);
-
-    if (task) {
-      task.completed = req.body.completed !== undefined ? req.body.completed : !task.completed;
-      task.status = task.completed ? 'Completed' : (task.submission ? 'Submitted' : 'Pending');
-      const updatedTask = await task.save();
-      const populatedTask = await Task.findById(updatedTask._id).populate('student', 'name class rollNumber');
-      res.json(populatedTask);
-    } else {
-      res.status(404).json({ message: 'Task not found' });
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid Task ID' });
     }
+
+    const currentTask = await Task.findById(id);
+    if (!currentTask) return res.status(404).json({ message: 'Task not found' });
+
+    const isCompleted = req.body.completed !== undefined ? req.body.completed : !currentTask.completed;
+    
+    const task = await Task.findOneAndUpdate(
+      { _id: id },
+      { 
+        completed: isCompleted,
+        status: isCompleted ? 'Completed' : (currentTask.submission ? 'Submitted' : 'Pending')
+      },
+      { new: true }
+    ).populate('student', 'name class rollNumber');
+
+    console.log(`Task ${id} status updated to: ${task.status}`);
+    res.json(task);
   } catch (error) {
+    console.error('Toggle Task Error:', error);
     res.status(500).json({ message: 'Error updating task' });
   }
 });
@@ -84,14 +110,14 @@ router.patch('/:id', protect, async (req, res) => {
 // @route DELETE /api/tasks/:id
 router.delete('/:id', protect, async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id);
+    const task = await Task.findByIdAndDelete(req.params.id);
     if (task) {
-      await task.deleteOne();
       res.json({ message: 'Task removed' });
     } else {
       res.status(404).json({ message: 'Task not found' });
     }
   } catch (error) {
+    console.error('Delete Task Error:', error);
     res.status(500).json({ message: 'Error deleting task' });
   }
 });
