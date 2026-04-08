@@ -10,6 +10,11 @@ Live Link:   https://student-management-jade-seven.vercel.app/
 - **Icons**: Lucide React
 - **Notifications**: React Hot Toast
 
+## Login -  admin
+## password - admin123
+
+## for user make new 
+
 ## Features
 - **Admin Dashboard**: Summary of students and tasks.
 - **Student Management**: Full CRUD (Create, Read, Update, Delete) for students.
