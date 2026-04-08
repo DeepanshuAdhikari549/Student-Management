@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { toast } from 'react-hot-toast';
-import { Plus, CheckCircle, Circle, Trash2, X, Calendar, User, FileText, Send, ClipboardCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { Plus, CheckCircle, Circle, Trash2, X, FileText, Send, Clock, CheckCircle2, User, Hash, Calendar } from 'lucide-react';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -27,44 +27,58 @@ const Tasks = () => {
       ]);
       setTasks(tRes.data);
       setStudents(sRes.data);
-    } catch { toast.error('Sync failed'); }
-    finally { setLoading(false); }
+    } catch { 
+        toast.error('Sync failed. Check your data connection.'); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   const handleSubmitAssignment = async (e) => {
     e.preventDefault();
-    if (!form.students || form.students.length === 0) return toast.error('Select students');
+    if (!form.students || form.students.length === 0) return toast.error('Please select at least one student');
     try {
       await API.post('/tasks', form);
-      toast.success('Assigned!');
+      toast.success(`Broadcasting assignment to ${form.students.length} students...`);
       setModalOpen(false);
       setForm({ title: '', description: '', students: [], dueDate: '' });
       fetchData();
-    } catch { toast.error('Error'); }
+    } catch { 
+        toast.error('Failed to create assignment'); 
+    }
   };
 
   const handleStudentSubmission = async (e) => {
     e.preventDefault();
     try {
       await API.patch(`/tasks/${submittingTask._id}/submit`, { submission: submissionText });
-      toast.success('Submitted!');
+      toast.success('Work submitted for review!');
       setSubmitModal(false);
       fetchData();
-    } catch { toast.error('Error'); }
+    } catch { 
+        toast.error('Submission failed'); 
+    }
   };
 
   const toggleComplete = async (id, status) => {
     try {
       const { data } = await API.patch(`/tasks/${id}`, { completed: !status });
       setTasks(tasks.map(t => t._id === id ? data : t));
-      toast.success(data.completed ? 'Task Completed!' : 'Task Re-opened');
-    } catch { toast.error('Error'); }
+      toast.success(data.completed ? 'Assignment Marked as Completed!' : 'Assignment Re-opened');
+    } catch { 
+        toast.error('Update failed'); 
+    }
   };
 
   const remove = async (id) => {
-    if (confirm('Delete task?')) {
-      await API.delete(`/tasks/${id}`);
-      setTasks(tasks.filter(t => t._id !== id));
+    if (window.confirm('Archive this assignment?')) {
+      try {
+        await API.delete(`/tasks/${id}`);
+        setTasks(tasks.filter(t => t._id !== id));
+        toast.success('Assignment deleted');
+      } catch {
+        toast.error('Deletion failed');
+      }
     }
   };
 
@@ -79,106 +93,150 @@ const Tasks = () => {
   const TabButton = ({ id, label, icon: Icon, count }) => (
     <button 
       onClick={() => setActiveTab(id)}
-      className={`btn ${activeTab === id ? 'btn-accent' : ''}`}
+      className="btn"
       style={{
-        background: activeTab === id ? '#2563eb' : 'white',
-        color: activeTab === id ? 'white' : '#64748b',
-        border: activeTab === id ? 'none' : '1px solid #e2e8f0',
-        padding: '0.75rem 2rem',
-        borderRadius: '100px',
-        fontWeight: 700
+        background: activeTab === id ? 'var(--accent)' : 'white',
+        color: activeTab === id ? 'white' : 'var(--text-light)',
+        border: activeTab === id ? 'none' : '1px solid var(--border)',
+        padding: '0.6rem 1.25rem',
+        borderRadius: '12px',
+        fontWeight: 700,
+        flex: 1,
+        maxWidth: '220px'
       }}
     >
-      <Icon size={18} /> {label} ({count})
+      <Icon size={16} /> <span style={{ display: 'none', sm: 'inline' }}>{label}</span> <span className="badge" style={{ background: activeTab === id ? 'rgba(255,255,255,0.2)' : 'var(--bg-gray)', marginLeft: '0.5rem' }}>{count}</span>
     </button>
   );
 
   return (
-    <div style={{paddingBottom: '5rem'}}>
-      <div className="page-header flex gap-4" style={{justifyContent: 'space-between', alignItems: 'center'}}>
-        <div>
-          <h1 className="page-title">{userInfo.role === 'admin' ? 'Assignment Hub' : 'My Tasks'}</h1>
-          <p className="page-desc">The central place for all schoolwork.</p>
+    <div style={{ paddingBottom: '6rem' }}>
+      <div className="page-header" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+                <h1 className="page-title">{userInfo.role === 'admin' ? 'Assignment Hub' : 'Personal Tasks'}</h1>
+                <p className="page-desc">Track progress, submit work and manage academic activities.</p>
+            </div>
+            {userInfo.role === 'admin' && (
+              <button onClick={() => setModalOpen(true)} className="btn btn-accent" style={{ display: 'none', md: 'inline-flex' }}>
+                <Plus size={20} /> Create Assignment
+              </button>
+            )}
         </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', padding: '0.5rem', background: 'white', border: '1px solid var(--border)', borderRadius: '16px' }}>
+            <TabButton 
+              id="active" 
+              label="Pending" 
+              icon={Clock} 
+              count={tasks.filter(t => !t.completed).length} 
+            />
+            <TabButton 
+              id="done" 
+              label="Completed" 
+              icon={CheckCircle2} 
+              count={tasks.filter(t => t.completed).length} 
+            />
+        </div>
+        
         {userInfo.role === 'admin' && (
-          <button onClick={() => setModalOpen(true)} className="btn btn-accent">
-            <Plus size={20} /> Create Assignment
+          <button onClick={() => setModalOpen(true)} className="btn btn-accent" style={{ display: 'inline-flex', md: 'none', width: '100%', justifyContent: 'center' }}>
+            <Plus size={20} /> New Assignment
           </button>
         )}
       </div>
 
-      <div className="flex gap-4 mb-10" style={{justifyContent: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '2.5rem'}}>
-        <TabButton 
-          id="active" 
-          label="Active Assignments" 
-          icon={Clock} 
-          count={tasks.filter(t => !t.completed).length} 
-        />
-        <TabButton 
-          id="done" 
-          label="Completed Work" 
-          icon={CheckCircle2} 
-          count={tasks.filter(t => t.completed).length} 
-        />
+      <div className="grid">
+        {loading ? (
+            <div style={{ textAlign: 'center', padding: '4rem' }}>
+                <div className="badge badge-blue">Syncing Tasks...</div>
+            </div>
+        ) : filteredTasks.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: '1rem' }}>
+               {filteredTasks.map(t => (
+                  <TaskCard 
+                    key={t._id} 
+                    t={t} 
+                    userInfo={userInfo} 
+                    onToggle={toggleComplete} 
+                    onRemove={remove} 
+                    onSubmit={() => { setSubmittingTask(t); setSubmissionText(''); setSubmitModal(true); }} 
+                  />
+               ))}
+            </div>
+        ) : (
+            <div className="card" style={{ textAlign: 'center', padding: '6rem 2rem', border: '2px dashed var(--border)', background: 'transparent' }}>
+                <Clock size={48} color="var(--border)" style={{ marginBottom: '1.5rem' }} />
+                <h3 style={{ color: 'var(--text-light)', fontWeight: 700 }}>
+                    Great job! No {activeTab === 'done' ? 'completed' : 'pending'} tasks found.
+                </h3>
+            </div>
+        )}
       </div>
 
-      {loading ? <h3>Loading...</h3> : (
-        <div className="grid">
-          {filteredTasks.length > 0 ? filteredTasks.map(t => (
-            <TaskCard 
-              key={t._id} 
-              t={t} 
-              userInfo={userInfo} 
-              onToggle={toggleComplete} 
-              onRemove={remove} 
-              onSubmit={() => { setSubmittingTask(t); setSubmitModal(true); }} 
-            />
-          )) : (
-            <div className="card text-center" style={{padding: '5rem', border: '3px dashed #f1f5f9', background: 'transparent'}}>
-              <h2 style={{color: '#cbd5e1', fontWeight: 700}}>
-                No {activeTab === 'done' ? 'Completed' : 'Active'} Tasks Found
-              </h2>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Modals remain same ... */}
       {modalOpen && (
-        <div className="modal-overlay" style={{background: 'rgba(0,0,0,0.5)', position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-          <div className="card" style={{maxWidth: '550px', width: '90%'}}>
-            <div className="flex" style={{justifyContent: 'space-between', marginBottom: '1.5rem'}}>
-              <h2 style={{fontWeight: 700}}>Assign Task</h2>
-              <button onClick={() => setModalOpen(false)} style={{background: 'none', border: 'none', cursor: 'pointer'}}><X size={24}/></button>
+        <div className="mobile-overlay open" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setModalOpen(false)}>
+          <div className="card" style={{ maxWidth: '600px', width: '100%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Assign Work</h2>
+              <button className="btn btn-ghost" style={{ padding: '0.5rem' }} onClick={() => setModalOpen(false)}><X size={20}/></button>
             </div>
-            <form onSubmit={handleSubmitAssignment} className="grid" style={{gap: '1.25rem'}}>
-              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Assignment Name" required />
-              <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Instructions..." rows="2" />
-              <div style={{maxHeight: '150px', overflowY: 'auto', background: '#f8fafc', padding: '1rem', borderRadius: '12px'}}>
-                {students.map(s => (
-                  <label key={s._id} style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.4rem 0'}}>
-                    <input type="checkbox" checked={form.students.includes(s._id)} onChange={() => toggleStudent(s._id)} />
-                    {s.name} ({s.class})
-                  </label>
-                ))}
+            
+            <form onSubmit={handleSubmitAssignment} className="grid" style={{ gap: '1.25rem' }}>
+              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Assignment Title" required />
+              <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Project description and instructions..." rows="3" />
+              
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-light)', marginBottom: '0.5rem', display: 'block' }}>Select Recipients</label>
+                <div style={{ maxHeight: '180px', overflowY: 'auto', background: 'var(--bg-gray)', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                  {students.map(s => (
+                    <label key={s._id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.6rem', borderRadius: '8px', marginBottom: '0.25rem' }} className="menu-link">
+                      <input type="checkbox" style={{ width: 'auto' }} checked={form.students.includes(s._id)} onChange={() => toggleStudent(s._id)} />
+                      <span style={{ fontSize: '0.9rem' }}>{s.name} <span style={{ color: 'var(--text-light)', fontSize: '0.75rem' }}>({s.class})</span></span>
+                    </label>
+                  ))}
+                  {students.length === 0 && <p style={{ fontSize: '0.8rem', textAlign: 'center', color: 'var(--text-light)', padding: '1rem' }}>No students enrolled yet.</p>}
+                </div>
               </div>
-              <input type="date" value={form.dueDate} onChange={e => setForm({...form, dueDate: e.target.value})} />
-              <button type="submit" className="btn btn-accent" style={{justifyContent: 'center', padding: '1.25rem'}}>Assign to {form.students.length} Students</button>
+              
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 800, display: 'block', marginBottom: '0.5rem', color: 'var(--text-light)' }}>DUE DATE</label>
+                    <input type="date" value={form.dueDate} onChange={e => setForm({...form, dueDate: e.target.value})} required />
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-accent" style={{ marginTop: '0.5rem', width: '100%', padding: '1.25rem' }}>
+                <Plus size={18} /> Broadcast to {form.students.length} Students
+              </button>
             </form>
           </div>
         </div>
       )}
 
       {submitModal && (
-        <div className="modal-overlay" style={{background: 'rgba(0,0,0,0.5)', position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-          <div className="card" style={{maxWidth: '500px', width: '90%'}}>
-            <div className="flex" style={{justifyContent: 'space-between', marginBottom: '1.5rem'}}>
-              <h2 style={{fontWeight: 700}}>Submit Your Work</h2>
-              <button onClick={() => setSubmitModal(false)} style={{background: 'none', border: 'none', cursor: 'pointer'}}><X size={24}/></button>
+        <div className="mobile-overlay open" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setSubmitModal(false)}>
+          <div className="card" style={{ maxWidth: '500px', width: '100%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Submit Work</h2>
+              <button className="btn btn-ghost" style={{ padding: '0.5rem' }} onClick={() => setSubmitModal(false)}><X size={20}/></button>
             </div>
-            <form onSubmit={handleStudentSubmission} className="grid" style={{gap: '1.25rem'}}>
-              <textarea value={submissionText} onChange={e => setSubmissionText(e.target.value)} placeholder="Write your answer..." rows="5" required />
-              <button type="submit" className="btn btn-accent" style={{justifyContent: 'center', padding: '1.25rem'}}><Send size={18} /> Send Submission</button>
+            
+            <form onSubmit={handleStudentSubmission} className="grid" style={{ gap: '1.25rem' }}>
+              <div style={{ background: 'var(--accent-soft)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--accent)' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)', marginBottom: '0.25rem' }}>ASSIGNMENT:</p>
+                <p style={{ fontWeight: 700, fontSize: '1rem' }}>{submittingTask.title}</p>
+              </div>
+              <textarea 
+                value={submissionText} 
+                onChange={e => setSubmissionText(e.target.value)} 
+                placeholder="Type your submission, answers or links to your work here..." 
+                rows="6" 
+                required 
+              />
+              <button type="submit" className="btn btn-accent" style={{ width: '100%', padding: '1.25rem' }}>
+                <Send size={18} /> Confirm Submission
+              </button>
             </form>
           </div>
         </div>
@@ -187,48 +245,77 @@ const Tasks = () => {
   );
 };
 
-const TaskCard = ({ t, userInfo, onToggle, onRemove, onSubmit }) => (
-  <div className="card" style={{
-    borderLeft: t.completed ? '8px solid #10b981' : (t.status === 'Submitted' ? '8px solid #2563eb' : '8px solid #f59e0b'),
-    opacity: t.completed ? 0.9 : 1
-  }}>
-    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-      <div style={{display: 'flex', gap: '1.5rem', alignItems: 'center'}}>
-        {userInfo.role === 'admin' ? (
-          <button onClick={() => onToggle(t._id, t.completed)} style={{background: 'none', border: 'none', cursor: 'pointer', color: t.completed ? '#10b981' : '#cbd5e1'}}>
-            {t.completed ? <CheckCircle size={36} /> : <Circle size={36} />}
-          </button>
-        ) : (
-          <div style={{color: t.completed ? '#10b981' : t.status === 'Submitted' ? '#2563eb' : '#cbd5e1'}}>
-            {t.completed ? <CheckCircle size={36} /> : <FileText size={36} />}
-          </div>
-        )}
-        <div>
-          <h3 style={{fontSize: '1.25rem', fontWeight: 800, textDecoration: t.completed ? 'line-through' : 'none'}}>{t.title}</h3>
-          <div style={{display: 'flex', wrap: 'wrap', gap: '1rem', color: '#64748b', fontSize: '0.9rem'}}>
-            {userInfo.role === 'admin' && <span className="flex gap-1 items-center font-bold"><User size={14}/> {t.student?.name}</span>}
-            <span className={`font-bold ${t.completed ? 'text-emerald-600' : 'text-amber-500'}`}>Status: {t.status}</span>
-          </div>
+const TaskCard = ({ t, userInfo, onToggle, onRemove, onSubmit }) => {
+  const isDone = t.completed;
+  const isSubmitted = t.status === 'Submitted';
+  
+  return (
+    <div className="card" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.25rem',
+        borderLeft: isDone ? '4px solid var(--success)' : (isSubmitted ? '4px solid var(--accent)' : '4px solid #f59e0b'),
+        background: isDone ? 'rgba(255,255,255,0.6)' : 'white'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+            {userInfo.role === 'admin' ? (
+                <button 
+                  onClick={() => onToggle(t._id, isDone)} 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDone ? 'var(--success)' : 'var(--border)', padding: 0 }}
+                >
+                  {isDone ? <CheckCircle size={28} /> : <Circle size={28} />}
+                </button>
+            ) : (
+                <div style={{ color: isDone ? 'var(--success)' : (isSubmitted ? 'var(--accent)' : 'var(--text-light)') }}>
+                    {isDone ? <CheckCircle size={28} /> : <FileText size={28} />}
+                </div>
+            )}
+            <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? 'var(--text-light)' : 'var(--primary)' }}>{t.title}</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.25rem' }}>
+                    {userInfo.role === 'admin' && (
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <User size={12} /> {t.student?.name}
+                        </div>
+                    )}
+                    <div className={`badge ${isDone ? 'badge-green' : (isSubmitted ? 'badge-blue' : 'badge-red')}`} style={{ fontSize: '0.65rem' }}>
+                        {t.status.toUpperCase()}
+                    </div>
+                    {t.dueDate && (
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Calendar size={12} /> {new Date(t.dueDate).toLocaleDateString()}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
+        
+        {userInfo.role === 'admin' && (
+            <button onClick={() => onRemove(t._id)} className="btn btn-ghost" style={{ color: 'var(--danger)', padding: '0.5rem' }}>
+                <Trash2 size={18} />
+            </button>
+        )}
       </div>
-      {userInfo.role === 'admin' && (
-        <button onClick={() => onRemove(t._id)} className="btn btn-red" style={{background: '#fee2e2', padding: '0.75rem', borderRadius: '12px'}}><Trash2 size={18} /></button>
+
+      {t.description && !isDone && (
+         <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', lineBreak: 'anywhere' }}>{t.description}</p>
+      )}
+
+      {t.submission && (
+        <div style={{ padding: '1rem', background: 'var(--bg-gray)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-light)', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>SUBMISSION CONTENT</p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--primary)', whiteSpace: 'pre-wrap' }}>{t.submission}</p>
+        </div>
+      )}
+
+      {userInfo.role === 'student' && !isDone && !isSubmitted && (
+        <button onClick={onSubmit} className="btn btn-accent" style={{ width: '100%', marginTop: '0.5rem' }}>
+           <Send size={16} /> Submit Task
+        </button>
       )}
     </div>
-    
-    {t.submission && (
-      <div style={{marginTop: '1.25rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
-        <p style={{fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', marginBottom: '0.5rem'}}>STUDENT RESPONSE:</p>
-        <p style={{fontSize: '0.95rem'}}>{t.submission}</p>
-      </div>
-    )}
-
-    {userInfo.role === 'student' && !t.completed && t.status !== 'Submitted' && (
-      <button onClick={onSubmit} className="btn btn-accent" style={{marginTop: '1.5rem', width: '100%', justifyContent: 'center'}}>
-        <Send size={18} /> Submit Work
-      </button>
-    )}
-  </div>
-);
+  );
+};
 
 export default Tasks;
