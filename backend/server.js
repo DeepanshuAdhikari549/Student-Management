@@ -7,6 +7,9 @@ const seedAdmin = require('./config/seed');
 dotenv.config();
 
 const app = express();
+if (!process.env.JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET is not defined in environment variables. Using a fallback for development.');
+}
 
 // Connect to Database
 connectDB().then(() => {

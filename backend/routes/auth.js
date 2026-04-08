@@ -27,7 +27,11 @@ router.post('/login', async (req, res) => {
         username: user.username || user.rollNumber,
         name: user.name || 'Admin',
         role: user.role || role,
-        token: jwt.sign({ id: user._id, role: user.role || role }, process.env.JWT_SECRET, { expiresIn: '30d' })
+        token: jwt.sign(
+          { id: user._id, role: user.role || role }, 
+          process.env.JWT_SECRET || 'fallback_secret_key_12345', 
+          { expiresIn: '30d' }
+        )
       });
     } else {
       res.status(401).json({ message: 'Invalid username or password' });
@@ -66,7 +70,11 @@ router.post('/register', async (req, res) => {
       name: student.name,
       rollNumber: student.rollNumber,
       role: 'student',
-      token: jwt.sign({ id: student._id, role: 'student' }, process.env.JWT_SECRET, { expiresIn: '30d' })
+      token: jwt.sign(
+        { id: student._id, role: 'student' }, 
+        process.env.JWT_SECRET || 'fallback_secret_key_12345', 
+        { expiresIn: '30d' }
+      )
     });
   } catch (error) {
     console.error('Registration Error:', error);
