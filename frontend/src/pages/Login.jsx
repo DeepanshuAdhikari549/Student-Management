@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import { toast } from 'react-hot-toast';
 import { LogIn, GraduationCap, UserPlus } from 'lucide-react';
@@ -14,15 +14,44 @@ const Login = ({ onLogin }) => {
   // Register State
   const [regData, setRegData] = useState({ name: '', rollNumber: '', class: '', email: '', password: '' });
 
+  const [serverStatus, setServerStatus] = useState('checking');
+
+  useEffect(() => {
+    let checkCount = 0;
+    const checkHealth = async () => {
+      try {
+        const { data } = await API.get('/health');
+        if (data.database === 'connected') setServerStatus('online');
+        else setServerStatus('db_error');
+      } catch (err) {
+        checkCount++;
+        if (checkCount > 5) setServerStatus('offline');
+        else setServerStatus('checking');
+      }
+    };
+    checkHealth();
+    // Check every 30 seconds
+    const interval = setInterval(checkHealth, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (serverStatus === 'offline') {
+      toast.error('The server seems to be offline. Please wait or check your connection.');
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await API.post('/auth/login', { username, password });
       onLogin(data);
       toast.success('Welcome back to SchoolHub!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err.code === 'ECONNABORTED') {
+        toast.error('Connection timed out. The server is responding very slowly.');
+      } else {
+        toast.error(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -30,13 +59,21 @@ const Login = ({ onLogin }) => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (serverStatus === 'offline') {
+      toast.error('The server seems to be offline.');
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await API.post('/auth/register', regData);
       onLogin(data);
       toast.success('Account created! Welcome to SchoolHub.');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Registration failed');
+      if (err.code === 'ECONNABORTED') {
+        toast.error('Connection timed out. Registration took too long.');
+      } else {
+        toast.error(err.response?.data?.message || 'Registration failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -56,8 +93,21 @@ const Login = ({ onLogin }) => {
   return (
     <div className="auth-page">
       <div className="card auth-card" style={{ textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', background: 'var(--accent-soft)', color: 'var(--accent)', padding: '1rem', borderRadius: '20px', marginBottom: '1.5rem' }}>
+        <div style={{ position: 'relative', display: 'inline-flex', background: 'var(--accent-soft)', color: 'var(--accent)', padding: '1rem', borderRadius: '20px', marginBottom: '1.5rem' }}>
           <GraduationCap size={48} />
+          <div 
+            title={`Server is ${serverStatus}`}
+            style={{ 
+              position: 'absolute', 
+              bottom: 0, 
+              right: 0, 
+              width: '12px', 
+              height: '12px', 
+              borderRadius: '50%', 
+              background: serverStatus === 'online' ? '#10b981' : (serverStatus === 'db_error' ? '#f59e0b' : '#ef4444'),
+              border: '2px solid white'
+            }} 
+          />
         </div>
         <h1 className="page-title" style={{ fontSize: '1.75rem' }}>SchoolHub</h1>
         <p className="page-desc" style={{ marginBottom: '2.5rem' }}>
@@ -82,7 +132,7 @@ const Login = ({ onLogin }) => {
             <input placeholder="Username / Roll Number" required value={username} onChange={e => setUsername(e.target.value)} />
             <input type="password" placeholder="Password" required value={password} onChange={e => setPassword(e.target.value)} />
             <button type="submit" className="btn btn-accent" style={{ marginTop: '0.5rem' }} disabled={loading}>
-              <LogIn size={20} /> {loading ? 'Singing in...' : 'Sign In'}
+              <LogIn size={20} /> {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         )}
@@ -97,10 +147,15 @@ const Login = ({ onLogin }) => {
           </button>
           
           {!isRegister && (
-            <div style={{ marginTop: '1rem' }}>
+            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <button onClick={handleSeed} style={{ background: 'none', border: 'none', color: 'var(--text-light)', fontSize: '0.75rem', cursor: 'pointer', opacity: 0.6 }}>
                 Initialize Admin System
               </button>
+              {serverStatus !== 'online' && (
+                <p style={{ fontSize: '0.7rem', color: '#ef4444' }}>
+                  {serverStatus === 'offline' ? '⚠️ Cannot reach backend server' : '⚠️ Database connection issue'}
+                </p>
+              )}
             </div>
           )}
         </div>

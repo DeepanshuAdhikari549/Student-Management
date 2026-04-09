@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Tasks from './pages/Tasks';
 import Login from './pages/Login';
+import NotFound from './pages/NotFound';
 import { useState, useEffect } from 'react';
 import { GraduationCap, LogOut, Menu as MenuIcon, X } from 'lucide-react';
 
@@ -61,23 +62,23 @@ const Navbar = ({ userInfo, handleLogout, isMobileMenuOpen, toggleMobileMenu, cl
       {/* Mobile menu drawer */}
       <div className={`mobile-overlay ${isMobileMenuOpen ? 'open' : ''}`} onClick={closeMobileMenu}></div>
       <div className={`mobile-drawer ${isMobileMenuOpen ? 'open' : ''}`}>
-         <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ fontWeight: 800, fontSize: '1.25rem' }}>{userInfo.name}</p>
-              <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>{userInfo.role.toUpperCase()}</p>
-            </div>
-            <button onClick={closeMobileMenu} style={{ background: 'none', border: 'none', color: 'var(--text-light)' }}>
-              <X size={24} />
-            </button>
-         </div>
-         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <NavLinks userInfo={userInfo} active={active} />
-         </div>
-         <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-           <button onClick={handleLogout} className="btn-red btn" style={{ width: '100%', justifyContent: 'center', padding: '1rem' }}>
-              <LogOut size={20} /> Logout
-           </button>
-         </div>
+        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <p style={{ fontWeight: 800, fontSize: '1.25rem' }}>{userInfo.name}</p>
+            <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>{userInfo.role.toUpperCase()}</p>
+          </div>
+          <button onClick={closeMobileMenu} style={{ background: 'none', border: 'none', color: 'var(--text-light)' }}>
+            <X size={24} />
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <NavLinks userInfo={userInfo} active={active} />
+        </div>
+        <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+          <button onClick={handleLogout} className="btn-red btn" style={{ width: '100%', justifyContent: 'center', padding: '1rem' }}>
+            <LogOut size={20} /> Logout
+          </button>
+        </div>
       </div>
     </>
   );
@@ -106,12 +107,12 @@ function App() {
   return (
     <Router>
       {userInfo && (
-        <Navbar 
-          userInfo={userInfo} 
-          handleLogout={handleLogout} 
-          isMobileMenuOpen={isMobileMenuOpen} 
-          toggleMobileMenu={toggleMobileMenu} 
-          closeMobileMenu={closeMobileMenu} 
+        <Navbar
+          userInfo={userInfo}
+          handleLogout={handleLogout}
+          isMobileMenuOpen={isMobileMenuOpen}
+          toggleMobileMenu={toggleMobileMenu}
+          closeMobileMenu={closeMobileMenu}
         />
       )}
       <div className={userInfo ? "container" : ""}>
@@ -120,6 +121,7 @@ function App() {
           <Route path="/" element={userInfo ? <Dashboard /> : <Navigate to="/login" />} />
           <Route path="/students" element={userInfo ? <Students /> : <Navigate to="/login" />} />
           <Route path="/tasks" element={userInfo ? <Tasks /> : <Navigate to="/login" />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
       <Toaster position="top-right" />
